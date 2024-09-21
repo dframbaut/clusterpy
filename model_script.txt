@@ -1,0 +1,353 @@
+├──  │  └──
+
+En el archivo model_script.py, se utilizan las siguientes 
+funciones provenientes de la librería clusterpy
+
+. model_script (Functions)
+│
+├── importArcData
+│
+├── addVariable()
+
+├── cluster 
+│
+└── exportArcData
+
+La función importArcData se encuentra en el archivo inputs.py,
+de clusterpy\core. Las funciones utilizadas para que la función
+importArcData funcionen, son:
+
+. inputs (PATH: core\inputs.py)
+└── importArcData
+    ├── Class Layer (PATH: core\layer.py)
+    │   └── Modules used:
+    │       ├── (name), (fieldNames), (Y), _defBbox (bbox)
+    │       └── (areas), (Wqueen), (Wrook), (shpType)
+    │   
+    ├── importDBF
+    └── importShape
+        ├── readShape
+        │   ├── readPoints
+        │   ├── readPolylines
+        │   └── readPolygons
+        └── weightsFromAreas (PATH: core\contiguity\weightsFromAreas)
+
+El atributo _defBbox no aparece en la clase Layer
+
+===============================================================
+
+. cluster (PATH: core\layer.py)
+├── fieldOperation() (PATH: core\data\CreateVariable)
+│
+├── execpExhaustiveFunctionalRegions() (core\toolboxes\pExhaustiveFunctionalRegions)
+│   │    
+│   ├── AreaManagerNodes (core\toolboxes\componentsAlg\areamanagernodes)
+│   │    
+│   ├── ExtendedMemory (toolboxes\componentsAlg\memory)
+│   │   │   
+│   │   ├── updateExtendedMemory
+
+│   ├── constructPossible
+
+│       ├──RegionMakerNodes
+│           ├── objInfo
+│           ├── recoverFromExtendedMemory **
+│           ├── returnRegions **
+│           ├── seeds **
+│   
+├── getVars()
+├── addVariable()
+
+============================================================
+
+. exportArcData (PATH: core\layer.py)
+├── shpWriterDis() (PATH: core\outputs.py)
+│   ├── shpWriter2()
+│   ├── shpWriter() 
+│
+├── exportDBFY()
+    │
+    ├── getVars()
+    ├── dbfWriter() (PATH: core\outputs.py)
+
+
+cluster('pExhaustiveFunctionalRegions',
+ ['dn'], p, convTabu=int(len(
+    areas)/p)*200, tabuLength=10,
+     wType='rook', inits=1000, 
+    dissolve=0, Dij=Dij, Cio=Cio)
+
+*args = 'pExhaustiveFunctionalRegions', ['dn'], p
+
+**kargs = convTabu=int(len(areas)/p)*200, 
+    tabuLength=10, wType='rook', inits=1000, 
+    dissolve=0, Dij=Dij, Cio=Cio
+
+
+colombia.exportArcData('Salidas/Colombia_int_'+str(p))
+
+├──  │  └──
+
+
+. CLUSTERPY_PYTHON3
+
+├── model_script.py
+│
+├── model_script.txt
+│
+└── Clusterpy
+    │
+    ├── __init__.py
+    │
+    └── core
+        │
+        ├── contiguity
+        │   │
+        │   ├── __init__.py
+        │   ├── output.py
+
+                ├── dict2gal()
+                ├── dict2csv()
+
+        │   ├── transformations.py
+
+                ├── dict2matrix()
+
+        │   └── weightsFromAreas.py
+
+                ├── weightsFromAreas()
+        │
+        ├── data
+        │   │
+        │   ├── __init__.py
+        │   ├── CreateVariable.py
+
+                ├── fieldOperation()
+
+        │   └── dissolvedata.py
+
+                ├── dissolveData()
+                ├── sumLists()
+                ├── meanLists()
+                ├── minimum()
+                ├── maximum()
+                ├── meanDesv()
+                ├── stdDesv()
+                ├── median()
+                ├── mode()
+                ├── rangeRegion()
+                ├── findFirstLast()
+                ├── numberAreas()
+        │
+        ├── geometry
+        │   │
+        │   └── dissolve.py
+
+                ├── dissolveLayer()
+                ├── dissolveMap()
+
+                ├── Class Ring
+                        ├── Attributes: area, segment
+                            lines, ringNeighbors, isHole
+                        
+                        ├── Methods: 
+                            ├── add()
+                            ├── setfirstlastpt()
+                            ├── checkIfInnerDonutRing()
+
+                ├── Class MultiRingCluster
+                    ├── Attributes: ringIds, independentRings
+                         holeRings, newHoleRings, contiguosRings,
+                         unlinkedSegments, newRings
+                ├── Class Area
+                    ├── Attributes: positionalID, ringIds
+                
+                ├── Class Segment
+                    ├── Attributes: areas, rings, sorted, unsorted
+                
+                ├── getScaleRatio()
+                ├── scale()
+                ├── readAreas()
+                ├── reconnect()
+                ├── connector()
+                ├── isHole()
+                ├── getArea()
+                ├── invertScale()
+        │
+        ├── toolboxes
+        │   │
+        │   ├── cluster
+        │   │   │
+        │   │   ├── componentsAlg
+        │   │   │   │
+        │   │   │   ├── areacl.py
+
+                        ├── Class areacl
+
+                            ├── Attributes: id,
+                                 neighs, data
+
+        │   │   │   ├── areamanager.py
+
+                         ├── Class AreaManager
+
+                             ├── Attributes: y,
+                                 areas, noNeighs,
+                                 variance, distancetype,
+                                 distanceStatDispatcher
+                             ├── Modules: 
+                                 ├── createAreas()
+
+        │   │   │   ├── areamanagernodes.py
+
+                         ├── Class AreaManagerNodes
+
+                             ├── Attributes: y, areas,
+                                 noNeighs, variance, distanceType,
+                                 createAreas(), distanceStatDispatcher
+                             
+                             ├── Modules:
+                                 ├── getDistance2Region()
+
+        │   │   │   ├── dist2Regions.py
+
+                         ├── getDistance2RegionCentroid()
+                         ├── getDistance2RegionFunctional()
+
+        │   │   │   ├── distanceFunctions.py
+
+                         ├── square_double()
+                         ├── stdobs()
+                         ├── distanceA2AEuclideanSquared()
+                         ├── getHammingDistance()
+                         ├── distanceA2AHausdorff()
+
+        │   │   │   ├── helperFunctions.py
+
+                         ├── calculateGetisG()
+                         ├── quickSort2()
+                         ├── quickSortIntersection()
+                         ├── neighborSort()
+
+        │   │   │   ├── memory.py
+
+                         ├── Class BasicMemory
+                             ├── Attributes: objInfo,
+                                 regions, seeds
+
+                             ├── Modules: updateBasicMemory()
+
+                        ├── Class ExtendedMemory
+                             ├── Attributes: area2Region,
+                                 region2Area, intraBorderringAreas
+
+                             ├── Modules: updateExtendedMemory()
+
+        │   │   │   ├── objFunctions.py
+
+                         ├── getObjectiveFunctionSumSquares()
+                         ├── getObjectiveFunctionSumSquaresFast()
+                         ├── getObjectiveFunctionClique()
+                         ├── getObjectiveFunctionFunctional()
+                         ├── getObjectiveFunctionFunctionalFast()
+                         ├── makeObjDict()
+
+        │   │   │   ├── regionmaker.py
+
+                        ├── Class RegionMaker
+
+                            ├── Attributes: am, areas, distanceType,
+                                 distanceStat, weightsObjectiveFunctinType,
+                                 indexDataOF, selectionType, objectiveFunctionType,
+                                 n, unassignedAreas, assignedAreas, area2Region,
+                                 region2Area, potentialRegion4Area, intraBorderingAreas,
+                                 candidateInfo, externalNeighs, alpha, numRegionsType, 
+                                 neighSolutions, regionMoves, distances, NRegion, N, 
+                                 data, objInfo
+                             
+                             ├── Modules: assignAreasNoNeighs(), returnRegions()
+
+        │   │   │   ├── regionmakernodes.py
+
+                         ├── Class RegionMakerNodes:
+
+                             ├── Attributes: am, areas, distanceType,
+                                 distanceStat, weightsDistanceStat,
+                                 indexDataStat, weightsObjectiveFunctinType, 
+                                 indexDataOF, selectionType, objectiveFunctionType,
+                                 n, unassignedAreas, assignedAreas, area2Region,
+                                 region2Area, potentialRegion4Area, intraBorderingAreas,
+                                 candidateInfo, externalNeighs, alpha, numRegionsType, 
+                                 neighSolutions, regionMoves, distances, NRegion, N, 
+                                 data, objInfo, seeds, 
+                                 potencialNodes, dynimizingNodesDistance
+                                 
+                             ├── Methods: assignAreasNoNeighs()
+
+        │   │   │   └── sommanager.py
+
+                        ├── Class somManager
+                             ├── Attributes: alphaType,
+                                 data, iters, outputLayer,
+                                  actualData, emptyClusters,
+                                  feasibleBMU, order, solutionsInput
+                        ├── Class geoSomManager()
+                             ├── Attributes: iCentroids, oCentroids,
+                                 geoWinner, feasibleBMU
+                             
+                             ├── Methods: defGeoWinnerAttributes()
+                                     ├── vectorDistance() 
+                                
+        │   │   │
+        │   │   ├──__init__.py
+
+        │   │   ├── pExhaustiveFunctionalRegions.py
+
+                     ├── constructPossible()
+                     ├── impactSeeds()
+                     
+        │   │   ├── random.py
+
+                     ├── execRandom()
+        │   │   └── som.py
+
+                     ├── originalSOM()
+        │   │
+        │   ├── rimaps
+        │   │   │
+        │   │   ├── __init__.py
+
+        │   │   ├── mrpolygons.py
+
+                     ├── mrpolygon()
+                     ├── scalePolygon()
+                     ├── polarPolygon2cartesian()
+                     ├── transportPolygonGeometry()
+                     ├── transportPolygon()
+
+        │   │   ├── rimaps.py
+
+                     ├── Class rimap()
+
+                         ├── Attributes: carteAreas, carteExternal
+                             n, pg, pu, su, alpha, sigma, N, mu, X_0,
+                             dt, alp, sig, lAreas, a, r, sa, sr, X1, 
+                             times, polygon, layer, areasPerLevel, oPolygon,
+                             carteAreas,   
+                         ├── Modules: postCorrectionDissolve(), deleteAreaFromW()
+                             
+        │   │   └── statistics.py
+
+                     ├── topoStatistics()
+                     ├── stepFrontiers()
+                     ├── noFrontiersW()
+                     ├── nAvailableMovements()
+                     
+        │   │   
+        │   ├── __init__.py
+        │   └── pExhaustiveFunctionalRegions.py
+        │
+        ├── __init__.py
+        ├── inputs.py
+        ├── layer.py
+        └── outputs.py
