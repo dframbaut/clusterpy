@@ -50,5 +50,6 @@ class AreaManager:
                 self.noNeighs = self.noNeighs | set([key])
             a = AreaCl(key, neighbours, data, self.variance)
             self.areas[key] = a
+
         if len(self.noNeighs) > 0:
             print("Disconnected areas neighs: ", list(self.noNeighs))

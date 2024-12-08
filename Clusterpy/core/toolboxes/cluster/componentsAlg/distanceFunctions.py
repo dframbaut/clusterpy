@@ -1,10 +1,7 @@
 import numpy as np
 
 def square_double(x):
-    ans = 0.0
-    for i in x:
-        ans += i*i
-    return ans
+    return sum([item**2 for item in x])
 
 def distanceA2AEuclideanSquared(x, std=[], w=[]):
     """
@@ -15,6 +12,7 @@ def distanceA2AEuclideanSquared(x, std=[], w=[]):
         x = np.array(x)
         x = stdobs(x)  #  standardize
         x = x.tolist()
+
     if w:
         x = np.array(x)
         w = w / float(np.add.reduce(w))
@@ -24,7 +22,7 @@ def distanceA2AEuclideanSquared(x, std=[], w=[]):
     numrows = len(x)
     distance = [0]*(numrows-1)
 
-    for row in xrange(numrows - 1):
+    for row in range(numrows - 1):
         npsublist = np.subtract(x[row], x[row + 1])
         sublist = npsublist.tolist()
         distance[row] = [square_double(sublist)]
@@ -50,12 +48,12 @@ def getHammingDistance(X, Y):
 
         assigned = {}
 
-        for i in xrange(lenX):
+        for i in range(lenX):
             if X[i] not in assigned:
                 assigned[X[i]] = r
                 r += 1
 
-        for i in xrange(lenX):
+        for i in range(lenX):
             XP[i] = assigned[XP[i]]
 
         return XP
@@ -99,3 +97,11 @@ distMethods = {}
 distMethods['EuclideanSquared'] = distanceA2AEuclideanSquared
 distMethods['Hamming'] = getHammingDistance
 distMethods['Hausdorff'] = distanceA2AHausdorff
+
+def stdobs(x):
+    """
+    Standardize observations (subtract mean and divide by std deviation).
+    """
+    mean = np.mean(x, axis=0)
+    std_dev = np.std(x, axis=0)
+    return (x - mean) / std_dev

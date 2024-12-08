@@ -5,6 +5,7 @@ from Clusterpy.core.toolboxes.pExhaustiveFunctionalRegions import execpExhaustiv
 
 from Clusterpy.core.outputs import dbfWriter, shpWriterDis
 
+import geopandas as gpd
 import numpy as np
 import itertools
 import time
@@ -52,6 +53,7 @@ class Layer():
         self.shpType = ''
         self.results = []
         self.name = ""
+        self.namesol = ""
         self.outputCluster = {}
         self.outputCluster['r2a'] = []
         self.outputCluster['r2aRoot'] = []
@@ -163,13 +165,16 @@ class Layer():
         >>> X[variableName1] = [function1, function2,....]
         >>> X[variableName2] = [function1, function2,....]
         """
+        
 
         # *args = 'pExhaustiveFunctionalRegions', ['dn'], p
         # **kargs = convTabu=int(len(areas)/p)*200, tabuLength=10, 
         #   wType='rook', inits=1000, dissolve=0, Dij=Dij, Cio=Cio
-        
-        algorithm = args[0]   
 
+        # y, w, pRegions = p , inits = 3, initialSolution = [],
+        # convTabu = 0, tabuLength = 10, Dij={}, Cio={}
+        
+        algorithm = 'pExhaustiveFunctionalRegions' 
         # Extracting W type from arguments
         wType = kargs['wType']
         kargs.pop('wType')
@@ -188,39 +193,64 @@ class Layer():
 
         # Construction of parameters            
         # print(args[1])
-        fieldNames = tuple(args[1]) ## Error: args[2] no se puede convertir en una lista
+        fieldNames = tuple(args[1]) 
         algorithmY = self.getVars(*fieldNames)
-        if std==1:
-            for nn,name in enumerate(fieldNames):
-                values = [i[0] for i in self.getVars(name).values()]
-                mean_value = np.mean(values)
-                std_value = np.std(values)
-                newVar = fieldOperation("( " + name + " - " + str(mean_value) + ")/float(" + str(std_value) + ")", algorithmY, fieldNames)
-                for nv,val in enumerate(newVar):
-                    algorithmY[nv][nn] = val
-            if algorithm == "maxpTabu":
-                population = fieldNames[-1]
-                populationY = self.getVars(population)
-                for key in populationY:
-                    algorithmY[key][-1] = populationY[key][0]
-        args = (algorithmY,algorithmW) + args[2:]  # No existen más de 2 argumentos
+        
 
+        #Nunca entra pq std == 0
+        # if std==1:
+        #     for nn,name in enumerate(fieldNames):
+        #         values = [i[0] for i in self.getVars(name).values()]
+        #         mean_value = np.mean(values)
+        #         std_value = np.std(values)
+        #         newVar = fieldOperation("( " + name + " - " + str(mean_value) + ")/float(" + str(std_value) + ")", algorithmY, fieldNames)
+        #         for nv,val in enumerate(newVar):
+        #             algorithmY[nv][nn] = val
+        #     if algorithm == "maxpTabu":
+        #         population = fieldNames[-1]
+        #         populationY = self.getVars(population)
+        #         for key in populationY:
+        #             algorithmY[key][-1] = populationY[key][0]
+        # args = (algorithmY,algorithmW) + args[2:]  # No existen más de 2 argumentos
+        
         name = algorithm + "_" +  time.strftime("%Y%m%d%H%M%S")
-        print("LLamando al algoritmo")
+        self.namesol = name
+        #print('content of name: ', name)
+
         self.outputCluster[name] = {
             "pExhaustiveFunctionalRegions": lambda *args, **kargs: execpExhaustiveFunctionalRegions(*args, **kargs),
             }[algorithm](*args, **kargs)
-        print("Terminando argoritmo")
+        
+        #print('Diccionario generado por ExhaustivePFun.Reg.: ', self.outputCluster[name])
+        #self.outputCluster[name]
+
+        # print('Arguments in outputCluster')
+        # for attr_name in dir(self.outputCluster[name]):
+        #     if not attr_name.startswith("__"):
+        #         try:
+        #             attr_value = getattr(self.outputCluster[name], attr_name)
+        #             print(f"Attribute {attr_name}: {attr_value}", '\n')
+        #         except AttributeError:
+        #             print(f"Attribute {attr_name} could not be accessed.")
+
+        # Dictionarios aparecen vacíios
+        
         self.outputCluster[name]["weightType"] = wType
         self.outputCluster[name]["aggregationVariables"] = fieldNames 
         self.outputCluster[name]["OS"] = os.name
+        #print('os.getenv(PROCESSOR_ARCHITECTURE):', os.getenv('PROCESSOR_ARCHITECTURE'), '\n')
+        #print('os.getenv(PROCESSOR_IDENTIFIER): ', os.getenv('PROCESSOR_IDENTIFIER'), '\n')
+        #print('os.getenv(NUMBER_OF_PROCESSORS): ', os.getenv('NUMBER_OF_PROCESSORS'), '\n')
         self.outputCluster[name]["proccesorArchitecture"] = os.getenv('PROCESSOR_ARCHITECTURE')
         self.outputCluster[name]["proccesorIdentifier"] = os.getenv('PROCESSOR_IDENTIFIER')
         self.outputCluster[name]["numberProccesor"] = os.getenv('NUMBER_OF_PROCESSORS')
+        #print('solution: ', self.outputCluster[name]["r2a"])
         sol = self.outputCluster[name]["r2a"]
         self.region2areas = sol
         self.addVariable([name], sol)
         self.outputCluster[name]["fieldName"] = self.fieldNames[-1]
+
+        
 
     def exportArcData(self, filename):
         """
@@ -235,10 +265,13 @@ class Layer():
             china = clusterpy.importArcData("clusterpy/data_examples/china")
             china.exportArcData("china")
         """
-        #print "Writing ESRI files"
-        shpWriterDis(self.areas, filename, self.shpType)
-        self.exportDBFY(filename)
-        #print "ESRI files created"
+        print ("Writing ESRI files")
+        gdf = gpd.read_file(filename + '.shp')
+        gdf['regionalización'] = self.outputCluster[self.namesol]["r2a"]
+        gdf.to_file(filename + '.shp', driver='ESRI Shapefile')
+
+        #self.exportDBFY(filename)
+        print("ESRI files rewrited")
 
     def exportDBFY(self, fileName, *args):    
         """Exports the database file
@@ -278,8 +311,4 @@ class Layer():
                 records[i] = []
                 records[i] = records[i] + Y.values()[i]
         dbfWriter(fieldNames, fieldspecs, records, fileName + '.dbf')
-        #print "Done"
-
-    def calculate_bbox(self):
-            # Supongamos que este método calcula y actualiza self.bbox basado en self.areas
-            self.bbox = [min(area) for area in self.areas]
+        print("Done")

@@ -34,6 +34,7 @@ class AreaCl:
                     self.var[j, i] = data[int(index)]
                     index += 1
             self.data = data[0: int(n + 1)]
+        #print(neighs)
 
     def returnDistance2Area(self, otherArea, distanceType="EuclideanSquared", indexData=[]):
         """

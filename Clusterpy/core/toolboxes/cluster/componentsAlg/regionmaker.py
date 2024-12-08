@@ -1,5 +1,6 @@
 from copy import deepcopy
 import numpy as np
+from Clusterpy.core.toolboxes.cluster.componentsAlg.selectionTypeFunctions import selectionTypeDispatcher
 
 class RegionMaker:
     """
@@ -255,3 +256,73 @@ class RegionMaker:
         areasId = self.area2Region.keys()
         areasId = np.sort(areasId).tolist()
         return [self.area2Region[area] for area in areasId]
+    
+    def constructRegions(self, filteredCandidates=-99, filteredReg=-99):
+        """
+        Construct potential regions per area
+        """
+        _d_stat = self.distanceStat
+        _wd_stat = self.weightsDistanceStat
+        _ida_stat = self.indexDataStat
+        _fun_am_d2r = self.am.getDistance2Region
+
+        lastRegion = 0
+        for areaID in self.potentialRegions4Area.keys():
+            if len(self.areas)<areaID:
+                print( 'Problemas con el tamaño', len(self.areas), areaID)
+            a = self.areas[areaID]
+            regionIDs = list(self.potentialRegions4Area[areaID])
+            for region in regionIDs:
+                if (self.numRegionsType != "Exogenous" and
+                    self.constructionStage == "growing"
+                    and region in self.feasibleRegions):
+                    #  Once a region reaches the threshold, the grow is
+                    #  rejected until the assignation of enclaves
+                    continue
+                else:
+                    if filteredCandidates == -99:
+                        if (areaID not in self.newExternal and
+                            region != self.changedRegion):
+                            lastRegion = region
+                            pass
+                        else:
+                            _reg_dist = 0.0
+                            if self.selectionType != "FullRandom":
+                                _reg_dist = _fun_am_d2r(self.areas[areaID],
+                                                        self.region2Area[region],
+                                                        distanceStat = _d_stat,
+                                                        weights = _wd_stat,
+                                                        indexData = _ida_stat)
+                            self.candidateInfo[(areaID, region)] = _reg_dist
+
+                    elif (filteredCandidates != -99 and
+                          areaID in filteredCandidates and
+                          region == filteredReg):
+                        _reg_dist = _fun_am_d2r(self.areas[areaID],
+                                                self.region2Area[region],
+                                                distanceStat = _d_stat,
+                                                weights = _wd_stat,
+                                                indexData = _ida_stat)
+                        self.candidateInfo[(areaID, region)] = _reg_dist
+
+        if len(self.candidateInfo) == 0:
+            self.changedRegion = lastRegion
+        if self.numRegionsType == "EndogenousRange":
+            self.filterCandidate(self.toRemove)
+        selectionTypeDispatcher[self.selectionType](self)
+
+    def assignAreasNoNeighs(self):
+        """
+        Assign to the region "-1" for the areas without neighbours
+        """
+        noNeighs = list(self.am.noNeighs)
+        nr = -1
+        for areaID in noNeighs:
+            self.area2Region[areaID] = nr
+            try:
+                aid = self.unassignedAreas.remove(areaID)
+            except:
+                pass
+            self.assignedAreas.append(areaID)
+            setAssigned = set(self.assignedAreas)
+        nr = nr - 1

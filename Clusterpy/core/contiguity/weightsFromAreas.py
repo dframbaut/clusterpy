@@ -1,4 +1,13 @@
+# from shapely.geometry import Polygon
+# import geopandas as gpd
+# import networkx as nx
 
+import struct
+import struct
+import numpy
+from os import path
+
+# WfromPolig
 
 def weightsFromAreas(AREAS):
     """Generates contiguity matrix
@@ -36,7 +45,7 @@ def weightsFromAreas(AREAS):
                 segment = [p1, p2]
                 segment.sort(key=lambda x: x[0]**2 + x[1]**2)
                 sortSegment = tuple(segment)
-                if sortSegment in segment2areas:
+                if segment2areas.get(sortSegment, False):
                     segment2areas[sortSegment] += [a]
                     areasRook = segment2areas[sortSegment]
                     for area1 in areasRook:
@@ -46,7 +55,7 @@ def weightsFromAreas(AREAS):
                                 Wrook[area2] += [area1]
                 else:
                     segment2areas[sortSegment] = [a]
-                if p1 in point2areas:
+                if point2areas.get(p1, False):
                     point2areas[p1] += [a]
                     areasQueen = point2areas[p1]
                     for area1 in areasQueen:
@@ -57,3 +66,24 @@ def weightsFromAreas(AREAS):
                 else:
                     point2areas[p1] = [a]
     return Wqueen, Wrook
+
+# def weightsFromAreas(filename):
+#     gdf = gpd.read_file(filename)
+#     G = nx.Graph()
+
+#     for idx, row in gdf.iterrows():
+#         poly = row['geometry']
+#         G.add_node(idx, geometry=poly)
+
+#     for other_idx, other_row in gdf.iterrows():
+#         if idx != other_idx:
+#             other_poly = other_row['geometry']
+#             if poly.touches(other_poly):
+#                 G.add_edge(idx, other_idx)
+    
+#     Wqueen = {n: list(G.neighbors(n)) for n in G.nodes()}
+
+#     Wrook = Wqueen.copy()
+#     #print("Wqueen:", Wqueen)
+#     #print("Wrook:", Wrook)
+#     return Wqueen, Wrook

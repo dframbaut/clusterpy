@@ -1,7 +1,10 @@
 import struct
+import geopandas as gpd
+from shapely.geometry import Polygon, Point
 
 from Clusterpy.core.layer import Layer
 from Clusterpy.core.contiguity.weightsFromAreas import weightsFromAreas
+from tqdm import tqdm
 
 def importArcData(filename):
     """Creates a new Layer from a shapefile (<file>.shp)
@@ -30,20 +33,21 @@ def importArcData(filename):
     #print("Loading " + filename.split("/")[-1] + ".dbf")
     data, fields, specs = importDBF(filename + '.dbf')
     #print "Loading " + filename + ".shp"
+    layer.areas, layer.Wqueen, layer.Wrook, layer.shpType = importShape(filename + '.shp')
+    
+    #print('layer.Wrook:', layer.Wrook, '\n'),
+    #print('layer.Queen:', layer.Wqueen)
+    #print('area content: ', layer.areas, '\n')
+
     if fields[0] != "ID":
         fields = ["ID"] + fields
         for y in data.keys():
-            data[y] = [y] + data[y]
+            data[y] = [y] + data[y] # -- INFORMATION STORED ON EACH REGION
+            data[y] = [value for value in data[y] if isinstance(value, (int, float))]
     # Check 
             
     layer.fieldNames = fields
     layer.Y = data
-    layer.areas, layer.Wqueen, layer.Wrook, layer.shpType = importShape(filename + '.shp')
-    layer.calculate_bbox()
-    # print(layer.bbox)  # para imprimir toda la lista
-    # print(layer.bbox[0]) 
-      # Eliminé .defBbox por bbox pq defBbox no aparece dentro  
-    #print "Done"    de los atributos de la Clase Layer
     return layer
     
 def importDBF(filename):
@@ -73,6 +77,7 @@ def importDBF(filename):
     while fileBytes.tell() < firstDataRecord - 1:
         name_bytes = fileBytes.read(11)
         name = name_bytes.decode('ascii').replace("\x00", "") # name = ''.join(struct.unpack(11 * 'c', fileBytes.read(11))).replace("\x00", "")
+        #print("nombre ", name)
         typ = fileBytes.read(1).decode('ascii')
         fileBytes.seek(4, 1)
         siz = struct.unpack('B', fileBytes.read(1))[0]
@@ -129,6 +134,11 @@ def importShape(shapefile):
     """
 
     INFO, areas = readShape(shapefile)
+    count = 0
+    for i in range(len(areas)):
+        count += len(areas[i])
+    print('length of AREAS: ', count)
+    # INFO['type'] = 5
     if INFO['type'] == 5:
         Wqueen, Wrook = weightsFromAreas(areas)
         #Wqueen = {}
@@ -152,16 +162,16 @@ def readShape(filename):
     """
     with open(filename, 'rb') as fileObj:
         # Leer la cabecera para obtener el tipo de forma
-        fileObj.seek(32)  # Saltar los primeros 32 bytes para llegar al tipo de forma
-        shape_type = struct.unpack('<i', fileObj.read(4))[0]  # Leer el tipo de forma
-
+        fileObj.seek(32)
+        shape_type = struct.unpack('<i', fileObj.read(4))[0]
+        #print('tipo de la forma: ', shape_type)
         # Dependiendo del tipo de forma, leer los datos apropiados
         if shape_type == 1:  # Points
             INFO, areas = readPoints(fileObj)
         elif shape_type == 3:  # PolyLine
             INFO, areas = readPolylines(fileObj)
         elif shape_type == 5:  # Polygon
-            INFO, areas = readPolygons(fileObj, fileObj.tell())
+            INFO, areas = readPolygons(filename)
         else:
             raise ValueError("Unsupported shape type")
         
@@ -240,53 +250,52 @@ def readPolylines(bodyBytes):
         id += 1
     return INFO, AREAS
 
-def readPolygons(bodyBytes, start_position):
-    """This function reads an ESRI shape file of polygons starting from a given position."""
-    bodyBytes.seek(start_position)  # Set the start position
-    INFO = {'type': 5}
+def extract_rings(AREAS, geometry):
+    area = []
+    outer_ring = []
+    inner_ring = []
+
+    if isinstance(geometry, Polygon):
+        for i in range(len(geometry.exterior.coords[:])):
+            outer_ring += [geometry.exterior.coords[i]]
+        inner_ring = [interior.coords[:] for interior in geometry.interiors]
+
+    area.append(outer_ring)
+    AREAS.append(area)
+
+def readPolygons(filename):
+    INFO = {}
+    INFO['type'] = 5
     AREAS = []
     
-    try:
-        while True:
-            if bodyBytes.read(1) == b"":  
-                break  # Check for the end of the file
-            bodyBytes.seek(-1, 1)  # Go back one byte to start reading the polygon record
-            
-            # Skip header parts that are not needed for reading numParts and numPoints
-            bodyBytes.seek(43, 1)  # Adjust according to your file's structure
-            
-            parts_bytes = bodyBytes.read(4)
-            points_bytes = bodyBytes.read(4)
-            if len(parts_bytes) < 4 or len(points_bytes) < 4:
-                break  # Not enough data to read, exit loop
-            
-            numParts = struct.unpack('<i', parts_bytes)[0]
-            numPoints = struct.unpack('<i', points_bytes)[0]
-            
-            # Read parts indices
-            parts = []
-            for _ in range(numParts):
-                part_index_bytes = bodyBytes.read(4)
-                if len(part_index_bytes) < 4:
-                    break  # Not enough data to read, exit loop
-                parts.append(struct.unpack('<i', part_index_bytes)[0])
-                
-            # Read coordinates for each point
-            area = []
-            ring = []
-            for i in range(numPoints):
-                point_data = bodyBytes.read(16)
-                if len(point_data) < 16:
-                    break  # Not enough data to read, exit loop
-                x, y = struct.unpack('<2d', point_data)
-                if i in parts and i != 0:
-                    area.append(ring)
-                    ring = []
-                ring.append((x, y))
-            area.append(ring)  # Add the last ring
-            AREAS.append(area)
-
-    except struct.error as e:
-        print(f"Error during unpacking data: {e}")
-
+    gdf = gpd.read_file(filename)    
+    
+    total_iterations = gdf.shape[0]
+    pbar = tqdm(total=total_iterations, desc="Constructing of AREAS")
+    
+    for i in range(gdf.shape[0]):
+        geometry = gdf.loc[i, 'geometry']
+        extract_rings(AREAS, geometry)
+        pbar.update(1)
+    pbar.close()
     return INFO, AREAS
+# def readPolygons(shapefile):
+#     """This function reads an ESRI shapefile of polygons starting from a given position."""
+#     INFO = {'type': 5}
+#     AREAS = []
+#     centroids = {}
+
+#     gdf = gpd.read_file(shapefile)
+#     gdf['centroid'] = gdf.geometry.centroid
+
+#     gdf['centroid_coords'] = gdf['centroid'].apply(lambda x: (x.x, x.y))
+#     for key, coord in gdf['centroid_coords'].items():
+#         centroids[key] = coord
+
+#     for area in gdf['Area_Km']:
+#         AREAS.append(area)
+    
+#     minx, miny, maxx, maxy = gdf.total_bounds
+#     bbox = [minx, miny, maxx, maxy]
+#     return INFO, AREAS, bbox, centroids
+

@@ -32,29 +32,33 @@ class AreaManagerNodes:
         self.createAreas(w, y, Dij)
         self.distanceStatDispatcher = distanceStatDispatcher
 
-    
+        
+
     def createAreas(self, w, y, Dij):
         """
         Creates instances of areas based on a sparse weights matrix (w) and a
         data array (y).
         """
         n = len(self.y)
+        #print('len of y: ', n)
         #self.distances = {}
         self.distances = Dij
         noNeighs = []
         for key in range(n):
             data = y[key]
+            #print("data createAreas: ", data)
             try:
                 neighbours = w[key]
             except:
                 neighbours = {}
                 w[key] = {}
             if len(w[key]) == 0:
-                self.noNeighs = self.noNeighs | set([key])
-            #print 'data', data
+                self.noNeighs = self.noNeighs.union(set([key]))
             a = AreaCl(key, neighbours, data)
-            #a = AreaCl(key, neighbours, data, self.variance)
+            #print("Neighbourhoods:", neighbours)
+
             self.areas[key] = a
+        
         if len(self.noNeighs) > 0:
             print("Disconnected areas neighs: ", list(self.noNeighs))
 
@@ -82,9 +86,14 @@ class AreaManagerNodes:
         Returns the attribute centroid of a set of areas
         """
         dataAvg = len(dataIndex) * [0.0]
+        
+        #print('dataIndex content: ' , len(dataIndex), '\n') # range(0,13)
         for aID in areaList:
             i = 0
             for index in dataIndex:
+                #print('Full content of numerator: ', self.areas[aID].data)
+                #print('Full content of denominator: ', areaList, '\n')
+                
                 dataAvg[i] += self.areas[aID].data[index] /len(areaList)
                 i += 1
         return dataAvg
@@ -121,7 +130,7 @@ class AreaManagerNodes:
         Return the ID of the area whitin a region that is closest to an area
         outside the region
         """
-        areaMin = -1;
+        areaMin = -1
         distanceMin = 1e300
         for aID in areaList:
             if self.distances[area.id, aID] < distanceMin:

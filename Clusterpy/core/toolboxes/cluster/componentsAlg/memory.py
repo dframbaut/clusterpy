@@ -10,6 +10,15 @@ class BasicMemory:
     """
 
     def __init__(self, objInfo=99999999E10, regions={}, seeds=[]):
+        """
+        @type objInfo: float
+        @keyword objInfo: Objective function value.
+
+        @type regions: list
+        @keyword regions: list of RegionŽs IDs
+        values.
+        """
+
         self.objInfo = objInfo
         self.regions = regions
         self.seeds = seeds
@@ -19,7 +28,7 @@ class BasicMemory:
         Updates BasicMemory from another BasicMemory or ExtendedMemory object.
         """
         self.objInfo = rm.objInfo
-        self.regions = rm.regions  # Directly access the 'regions' attribute
+        self.regions = rm.returnRegions()  # Directly access the 'regions' attribute
         self.seeds = rm.seeds
 
 
@@ -32,6 +41,7 @@ class ExtendedMemory(BasicMemory):
     """
 
     def __init__(self, objInfo=99999999E10, area2Region={}, region2Area={}, intraBorderingAreas={}):
+        
         super().__init__(objInfo, {})  # Call parent's constructor
         self.area2Region = area2Region
         self.region2Area = region2Area

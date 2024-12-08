@@ -48,8 +48,23 @@ def fullRandom(RegionMaker):
     """
     Select and assign randomly an area
     """
-    keys = RegionMaker.candidateInfo.keys()
+    keys = list(RegionMaker.candidateInfo.keys())
+    #print('keys content: ', keys, '\n')
+
+# #===========================================================
+#     print('Arguments in RegionMaker')
+#     for attr_name in dir(RegionMaker):
+#         if not attr_name.startswith("__"):
+#             try:
+#                 attr_value = getattr(RegionMaker, attr_name)
+#                 print(f"Attribute {attr_name}: {attr_value}", '\n')
+#             except AttributeError:
+#                 print(f"Attribute {attr_name} could not be accessed.")
+# #===========================================================
+
+    # regionmakernodes line 605, candidateInfo is full of 0's
     values = [ RegionMaker.candidateInfo[i] for i in keys ]
+    #print('values content: ', values, '\n')
     if len(values) > 0:
         randomIndex = np.random.randint(0, len(values))
         aid,rid = keys[randomIndex]
